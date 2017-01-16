@@ -22,6 +22,8 @@ import java.io.FileOutputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Date;
 
 /**
@@ -192,7 +194,12 @@ class ImageResizer {
     private static Bitmap loadBitmap(Context context, String imagePath, BitmapFactory.Options options) throws IOException {
         Bitmap sourceImage = null;
         if (!imagePath.startsWith("content://") && !imagePath.startsWith("file://")) {
-            sourceImage = BitmapFactory.decodeFile(imagePath, options);
+            URL url = new URL(imagePath);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setDoInput(true);
+            connection.connect();
+            InputStream input = connection.getInputStream();
+            sourceImage = BitmapFactory.decodeStream(input);
         } else {
             ContentResolver cr = context.getContentResolver();
             InputStream input = cr.openInputStream(Uri.parse(imagePath));
@@ -258,10 +265,10 @@ class ImageResizer {
 
         // If the BASE64_PREFIX is absent, load bitmap from a file.  Otherwise, load from base64.
         if (imagePath.indexOf(BASE64_PREFIX) < 0) {
-            sourceImage = ImageResizer.loadBitmapFromFile(context, imagePath, newWidth, newHeight);
+            sourceImage = fr.bamlab.rnimageresizer.ImageResizer.loadBitmapFromFile(context, imagePath, newWidth, newHeight);
         }
         else {
-            sourceImage = ImageResizer.loadBitmapFromBase64(imagePath);
+            sourceImage = fr.bamlab.rnimageresizer.ImageResizer.loadBitmapFromBase64(imagePath);
         }
 
         if (sourceImage == null){
@@ -269,7 +276,7 @@ class ImageResizer {
         }
 
         // Scale it first so there are fewer pixels to transform in the rotation
-        Bitmap scaledImage = ImageResizer.resizeImage(sourceImage, newWidth, newHeight);
+        Bitmap scaledImage = fr.bamlab.rnimageresizer.ImageResizer.resizeImage(sourceImage, newWidth, newHeight);
         if (sourceImage != scaledImage) {
             sourceImage.recycle();
         }
@@ -278,7 +285,7 @@ class ImageResizer {
         Bitmap rotatedImage = scaledImage;
         int orientation = getOrientation(context, Uri.parse(imagePath));
         rotation = orientation + rotation;
-        rotatedImage = ImageResizer.rotateImage(scaledImage, rotation);
+        rotatedImage = fr.bamlab.rnimageresizer.ImageResizer.rotateImage(scaledImage, rotation);
 
         if (scaledImage != rotatedImage) {
             scaledImage.recycle();
@@ -290,7 +297,7 @@ class ImageResizer {
             path = new File(outputPath);
         }
 
-        String resizedImagePath = ImageResizer.saveImage(rotatedImage, path,
+        String resizedImagePath = fr.bamlab.rnimageresizer.ImageResizer.saveImage(rotatedImage, path,
                 Long.toString(new Date().getTime()), compressFormat, quality);
 
         // Clean up remaining image
