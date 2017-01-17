@@ -193,13 +193,16 @@ class ImageResizer {
      */
     private static Bitmap loadBitmap(Context context, String imagePath, BitmapFactory.Options options) throws IOException {
         Bitmap sourceImage = null;
-        if (!imagePath.startsWith("content://") && !imagePath.startsWith("file://")) {
+        if (imagePath.startsWith("http://") || imagePath.startsWith("https://")){
             URL url = new URL(imagePath);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setDoInput(true);
             connection.connect();
             InputStream input = connection.getInputStream();
             sourceImage = BitmapFactory.decodeStream(input);
+        }
+        else if (!imagePath.startsWith("content://") && !imagePath.startsWith("file://")) {
+            sourceImage = BitmapFactory.decodeFile(imagePath, options);
         } else {
             ContentResolver cr = context.getContentResolver();
             InputStream input = cr.openInputStream(Uri.parse(imagePath));
